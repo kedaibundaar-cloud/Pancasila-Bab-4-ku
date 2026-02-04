@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pancasila Battle Royale: Bhinneka Tunggal Ika</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;600;700&family=Bangers&family=Oxanium:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ff-orange: #ff8a00;
+            --ff-yellow: #ffde00;
+            --ff-red: #ff2a00;
+            --ff-blue: #00f0ff;
+            --ff-dark: #05070a;
+            --ff-card: #12161d;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Oxanium', sans-serif;
+            background-color: var(--ff-dark);
+            color: white;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .ff-bg {
+            background: 
+                radial-gradient(circle at center, rgba(255, 138, 0, 0.1) 0%, transparent 70%),
+                linear-gradient(rgba(5, 7, 10, 0.85), rgba(5, 7, 10, 0.85)),
+                url('https://www.transparenttextures.com/patterns/carbon-fibre.png'),
+                #0a0c10;
+            background-size: cover;
+        }
+
+        .ff-title { font-family: 'Bangers', cursive; }
+        .ff-sub { font-family: 'Teko', sans-serif; text-transform: uppercase; }
+
+        .btn-ff {
+            background: linear-gradient(90deg, var(--ff-orange), var(--ff-yellow));
+            color: black;
+            font-family: 'Teko', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            clip-path: polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%);
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-ff:hover {
+            transform: scale(1.05) skewX(-2deg);
+            filter: brightness(1.2);
+            box-shadow: 0 0 15px var(--ff-orange);
+        }
+
+        .char-card {
+            background: var(--ff-card);
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .char-card.selected {
+            border-color: var(--ff-yellow);
+            background: rgba(255, 222, 0, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .answer-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            width: 100%;
+        }
+
+        .answer-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            text-align: left;
+            font-family: 'Teko', sans-serif;
+            font-size: 1.3rem;
+            border-radius: 4px;
+            transition: all 0.2s;
+            color: white;
+            line-height: 1.2;
+        }
+
+        .answer-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--ff-yellow);
+            transform: translateX(5px);
+        }
+
+        .topic-card {
+            background: linear-gradient(135deg, #1a1f26 0%, #0d1117 100%);
+            border: 2px solid #2d343f;
+            transition: all 0.3s;
+        }
+
+        .topic-card:hover {
+            border-color: var(--ff-yellow);
+            background: linear-gradient(135deg, #252b36 0%, #1a1f26 100%);
+        }
+
+        .floating-score {
+            position: absolute;
+            font-family: 'Bangers';
+            font-size: 3rem;
+            pointer-events: none;
+            animation: scoreFloat 1s ease-out forwards;
+            z-index: 100;
+        }
+
+        @keyframes scoreFloat {
+            0% { transform: translate(-50%, 0); opacity: 1; }
+            100% { transform: translate(-50%, -100px); opacity: 0; }
+        }
+
+        .timer-critical { animation: pulse 0.5s infinite; color: #ff2a00 !important; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    </style>
+</head>
+<body class="ff-bg min-h-screen">
+
+    <!-- Efek Suara -->
+    <audio id="snd-hore" src="https://assets.mixkit.co/active_storage/sfx/2012/2012-preview.mp3"></audio>
+    <audio id="snd-salah" src="https://assets.mixkit.co/active_storage/sfx/256/256-preview.mp3"></audio>
+    <audio id="snd-tick" src="https://assets.mixkit.co/active_storage/sfx/514/514-preview.mp3" loop></audio>
+
+    <!-- UI: HOME -->
+    <div id="screen-home" class="flex flex-col items-center justify-center h-screen">
+        <div class="text-center transform -skew-x-6">
+            <h1 class="ff-title text-9xl text-white drop-shadow-2xl">PANCASILA</h1>
+            <div class="bg-yellow-500 text-black ff-sub text-4xl px-8 py-1 font-bold inline-block -mt-4 italic">BATTLE ROYALE</div>
+        </div>
+        <div class="mt-16 flex flex-col gap-4 w-72">
+            <button onclick="changeScreen('screen-character')" class="btn-ff py-4">PILIH KARAKTER</button>
+            <button class="ff-sub text-white border border-white/20 px-8 py-2 opacity-50 cursor-not-allowed">PANDUAN (LOCKED)</button>
+        </div>
+    </div>
+
+    <!-- UI: KARAKTER -->
+    <div id="screen-character" class="hidden flex-col items-center justify-center h-screen p-8">
+        <h2 class="ff-title text-5xl text-yellow-400 mb-6 italic">REKRUT SURVIVOR</h2>
+        <div class="grid grid-cols-2 gap-12 w-full max-w-6xl">
+            <div class="flex flex-col">
+                <p class="ff-sub text-blue-400 text-2xl mb-4 border-b border-blue-400/30">PLAYER 1</p>
+                <div id="p1-hero-grid" class="grid grid-cols-4 gap-3"></div>
+            </div>
+            <div class="flex flex-col">
+                <p class="ff-sub text-red-500 text-2xl mb-4 border-b border-red-500/30">PLAYER 2</p>
+                <div id="p2-hero-grid" class="grid grid-cols-4 gap-3"></div>
+            </div>
+        </div>
+        <button onclick="changeScreen('screen-topic')" class="btn-ff mt-12 px-20 py-4">KONFIRMASI</button>
+    </div>
+
+    <!-- UI: TOPIK -->
+    <div id="screen-topic" class="hidden flex-col items-center justify-center h-screen p-6 overflow-y-auto">
+        <h2 class="ff-title text-6xl text-white mb-2 italic">PILIH <span class="text-yellow-400">MISI</span></h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl">
+            <div onclick="startGame(0)" class="topic-card p-6 cursor-pointer flex items-center gap-6">
+                <div class="bg-yellow-500 text-black p-4 ff-title text-3xl rounded">01</div>
+                <div><h3 class="ff-sub text-2xl text-yellow-400">Makna Persatuan</h3><p class="text-sm text-gray-300">Konsep integrasi dan kesatuan wilayah Indonesia.</p></div>
+            </div>
+            <div onclick="startGame(1)" class="topic-card p-6 cursor-pointer flex items-center gap-6">
+                <div class="bg-yellow-500 text-black p-4 ff-title text-3xl rounded">02</div>
+                <div><h3 class="ff-sub text-2xl text-yellow-400">Keberagaman SARA</h3><p class="text-sm text-gray-300">Detail Suku, Agama, Ras, dan Antar Golongan.</p></div>
+            </div>
+            <div onclick="startGame(2)" class="topic-card p-6 cursor-pointer flex items-center gap-6">
+                <div class="bg-yellow-500 text-black p-4 ff-title text-3xl rounded">03</div>
+                <div><h3 class="ff-sub text-2xl text-yellow-400">Perubahan Sosial</h3><p class="text-sm text-gray-300">Faktor internal & eksternal perubahan budaya.</p></div>
+            </div>
+            <div onclick="startGame(3)" class="topic-card p-6 cursor-pointer flex items-center gap-6">
+                <div class="bg-yellow-500 text-black p-4 ff-title text-3xl rounded">04</div>
+                <div><h3 class="ff-sub text-2xl text-yellow-400">Sikap Global</h3><p class="text-sm text-gray-300">Menyaring budaya luar sesuai jati diri bangsa.</p></div>
+            </div>
+            <div onclick="startGame(4)" class="topic-card p-6 cursor-pointer flex items-center gap-6 col-span-full border-yellow-500">
+                <div class="bg-yellow-500 text-black p-4 ff-title text-3xl rounded">ALL</div>
+                <div class="flex-1"><h3 class="ff-sub text-2xl text-yellow-400">RANKED (RANDOM)</h3><p class="text-sm text-gray-300">Pertempuran semua materi untuk menjadi yang terbaik.</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI: GAMEPLAY -->
+    <div id="screen-game" class="hidden flex-col h-screen">
+        <div class="h-16 bg-black/60 border-b border-yellow-500/50 flex items-center px-10 relative">
+            <div class="w-full h-1 bg-gray-800 relative">
+                <div id="p1-marker" class="absolute -top-6 transition-all duration-500"><img id="p1-icon" src="" class="w-10 h-10 rounded-full border border-blue-400"><div class="bg-blue-400 text-black text-[8px] font-bold text-center">P1</div></div>
+                <div id="p2-marker" class="absolute -top-6 transition-all duration-500"><img id="p2-icon" src="" class="w-10 h-10 rounded-full border border-red-500 mt-10"><div class="bg-red-500 text-white text-[8px] font-bold text-center">P2</div></div>
+                <div class="absolute right-0 h-8 -top-4 w-1 bg-yellow-500"></div>
+            </div>
+        </div>
+        <div class="flex-1 grid grid-cols-2 overflow-hidden">
+            <div id="zone-1" class="border-r border-white/5 p-4 flex flex-col items-center relative">
+                <div class="w-full flex justify-between ff-sub text-xl mb-1">
+                    <span class="text-blue-400">SCORE: <span id="p1-score">0</span></span>
+                    <span id="p1-timer-val" class="text-yellow-400">30s</span>
+                </div>
+                <div class="w-full h-1 bg-gray-800 rounded-full mb-4"><div id="p1-timer-bar" class="h-full bg-blue-400 w-full transition-all duration-1000"></div></div>
+                <div class="bg-[#1a1f26] p-4 rounded w-full mb-4 border-l-4 border-blue-400 min-h-[100px] flex items-center justify-center">
+                    <p id="p1-question" class="text-lg font-bold italic text-center leading-tight"></p>
+                </div>
+                <div id="p1-options" class="answer-grid"></div>
+            </div>
+            <div id="zone-2" class="p-4 flex flex-col items-center relative">
+                <div class="w-full flex justify-between ff-sub text-xl mb-1">
+                    <span class="text-red-500">SCORE: <span id="p2-score">0</span></span>
+                    <span id="p2-timer-val" class="text-yellow-400">30s</span>
+                </div>
+                <div class="w-full h-1 bg-gray-800 rounded-full mb-4"><div id="p2-timer-bar" class="h-full bg-red-500 w-full transition-all duration-1000"></div></div>
+                <div class="bg-[#1a1f26] p-4 rounded w-full mb-4 border-l-4 border-red-500 min-h-[100px] flex items-center justify-center">
+                    <p id="p2-question" class="text-lg font-bold italic text-center leading-tight"></p>
+                </div>
+                <div id="p2-options" class="answer-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI: RESULT -->
+    <div id="screen-result" class="hidden flex-col items-center justify-center h-screen bg-black/95 z-50">
+        <div id="win-banner" class="ff-title text-8xl text-yellow-400 italic animate-bounce">BOOYAH!</div>
+        <div class="mt-4 flex gap-10 items-center bg-gray-900/50 p-8 rounded border border-yellow-500/30">
+            <div class="text-center">
+                <img id="win-avatar" src="" class="w-24 h-24 rounded-full border-2 border-yellow-400 mx-auto">
+                <p id="win-name" class="ff-sub text-2xl text-white mt-2"></p>
+            </div>
+            <div class="text-center">
+                <p class="ff-sub text-gray-400">POIN AKHIR</p>
+                <p id="win-score" class="ff-title text-6xl text-yellow-400">0</p>
+            </div>
+        </div>
+        <button onclick="location.reload()" class="btn-ff mt-8 px-12 py-3">RESTART LOBBY</button>
+    </div>
+
+    <script>
+        // --- DATA SOAL TERKOREKSI (20 SOAL PER KATEGORI) ---
+        const questData = [
+            // Kategori 0: Makna Persatuan & Negara (20 Soal)
+            { t:0, q: "Semboyan Bhinneka Tunggal Ika secara resmi menjadi semboyan...", a: ["Negara Kesatuan Republik Indonesia", "Pemerintah Daerah Bali", "Suku Majapahit", "Kerajaan Nusantara"], c: 0 },
+            { t:0, q: "Lambang Negara Indonesia adalah...", a: ["Garuda Pancasila", "Bendera Merah Putih", "Lagu Indonesia Raya", "Burung Merpati"], c: 0 },
+            { t:0, q: "Makna 'Ika' dalam semboyan negara berarti...", a: ["Itu", "Satu", "Beragam", "Persatuan"], c: 0 },
+            { t:0, q: "Persatuan dalam keberagaman merupakan kunci sukses...", a: ["Integrasi Nasional", "Otonomi Daerah", "Pemisahan Wilayah", "Dominasi Mayoritas"], c: 0 },
+            { t:0, q: "Semboyan negara tertulis pada bagian lambang Garuda di...", a: ["Pita yang dicengkeram kaki", "Perisai di dada", "Sayap kanan", "Ekor"], c: 0 },
+            { t:0, q: "Prinsip Bhinneka Tunggal Ika mengakui keberagaman sebagai...", a: ["Kekayaan Bangsa", "Kekurangan Negara", "Alasan Perang", "Beban Rakyat"], c: 0 },
+            { t:0, q: "Integrasi nasional secara politis berarti penyatuan...", a: ["Berbagai kelompok budaya ke satu identitas nasional", "Satu pulau menjadi satu provinsi", "Beberapa partai menjadi satu", "Agama menjadi satu"], c: 0 },
+            { t:0, q: "Paham yang menganggap suku bangsa sendiri paling unggul disebut...", a: ["Etnosentrisme", "Nasionalisme", "Patriotisme", "Humanisme"], c: 0 },
+            { t:0, q: "Batas wilayah Indonesia secara hukum internasional diatur dalam...", a: ["UNCLOS 1982", "UUD 1945", "Sumpah Pemuda", "Piagam Jakarta"], c: 0 },
+            { t:0, q: "Salah satu faktor penghambat persatuan adalah...", a: ["Ketimpangan Pembangunan", "Gotong Royong", "Toleransi", "Pendidikan Merata"], c: 0 },
+            { t:0, q: "Sifat persatuan Indonesia bersifat...", a: ["Multikultural", "Homogen", "Individualis", "Eklusif"], c: 0 },
+            { t:0, q: "Landasan konstitusional persatuan bangsa adalah...", a: ["UUD 1945 Pasal 1", "Peraturan Desa", "Hukum Adat", "Instruksi Presiden"], c: 0 },
+            { t:0, q: "Lagu kebangsaan Indonesia adalah...", a: ["Indonesia Raya", "Satu Nusa Satu Bangsa", "Bagimu Negeri", "Garuda Pancasila"], c: 0 },
+            { t:0, q: "Semboyan Bhinneka Tunggal Ika diambil dari kitab...", a: ["Sutasoma", "Negarakertagama", "Arjunawiwaha", "Ramayana"], c: 0 },
+            { t:0, q: "Penulis kitab Sutasoma adalah...", a: ["Mpu Tantular", "Mpu Prapanca", "Gajah Mada", "Hayam Wuruk"], c: 0 },
+            { t:0, q: "Indonesia merupakan negara Kepulauan atau...", a: ["Archipelagic State", "Landlocked State", "Continental State", "City State"], c: 0 },
+            { t:0, q: "Warna bendera negara Indonesia adalah...", a: ["Merah Putih", "Merah Putih Biru", "Kuning Hijau", "Hitam Putih"], c: 0 },
+            { t:0, q: "Bhinneka Tunggal Ika bermakna...", a: ["Berbeda-beda tetap satu jua", "Bersatu kita teguh", "Satu nusa satu bangsa", "Cinta tanah air"], c: 0 },
+            { t:0, q: "Sikap yang mencerminkan Bhinneka Tunggal Ika adalah...", a: ["Menghargai perbedaan", "Mengejek budaya lain", "Menutup diri", "Memaksa pendapat"], c: 0 },
+            { t:0, q: "Persatuan Indonesia merupakan sila ke-...", a: ["3", "1", "2", "4"], c: 0 },
+
+            // Kategori 1: SARA (20 Soal)
+            { t:1, q: "Suku bangsa yang berasal dari Sumatra Utara adalah...", a: ["Batak", "Dayak", "Bugis", "Asmat"], c: 0 },
+            { t:1, q: "Agama yang diakui secara resmi di Indonesia berjumlah...", a: ["6", "3", "5", "10"], c: 0 },
+            { t:1, q: "Suku Bugis dan Makassar berasal dari pulau...", a: ["Sulawesi", "Jawa", "Kalimantan", "Sumatra"], c: 0 },
+            { t:1, q: "Rumah Gadang merupakan rumah adat suku...", a: ["Minangkabau", "Betawi", "Sunda", "Baduy"], c: 0 },
+            { t:1, q: "Senjata tradisional Rencong berasal dari...", a: ["Aceh", "Papua", "NTT", "Madura"], c: 0 },
+            { t:1, q: "Suku yang terkenal dengan tradisi Lompat Batu adalah suku...", a: ["Nias", "Toraja", "Dani", "Sasak"], c: 0 },
+            { t:1, q: "Hari raya Nyepi dirayakan oleh umat...", a: ["Hindu", "Buddha", "Islam", "Konghucu"], c: 0 },
+            { t:1, q: "Waisak merupakan hari besar keagamaan umat...", a: ["Buddha", "Kristen", "Hindu", "Islam"], c: 0 },
+            { t:1, q: "Gereja merupakan tempat ibadah umat...", a: ["Kristen & Katolik", "Islam", "Hindu", "Buddha"], c: 0 },
+            { t:1, q: "Vihara merupakan tempat ibadah umat...", a: ["Buddha", "Hindu", "Konghucu", "Islam"], c: 0 },
+            { t:1, q: "Ras Malayan-Mongoloid sebagian besar mendiami wilayah...", a: ["Indonesia bagian Barat & Tengah", "Papua", "Australia", "Eropa"], c: 0 },
+            { t:1, q: "Ras Melanesoid banyak tersebar di wilayah...", a: ["Papua & Maluku", "Jawa", "Sumatra", "Kalimantan"], c: 0 },
+            { t:1, q: "Istilah SARA merupakan singkatan dari...", a: ["Suku Agama Ras Antar-golongan", "Satu Agama Raya Adil", "Suku Adat Rakyat Asli", "Sosial Agama Ras Adat"], c: 0 },
+            { t:1, q: "Contoh antar-golongan dalam masyarakat adalah...", a: ["Organisasi Profesi", "Satu Keluarga", "Satu Suku", "Warna Kulit"], c: 0 },
+            { t:1, q: "Penyebaran agama Islam di Indonesia banyak dilakukan melalui...", a: ["Perdagangan", "Penjajahan", "Paksaan", "Perang"], c: 0 },
+            { t:1, q: "Kitab suci umat Islam adalah...", a: ["Al-Qur'an", "Alkitab", "Weda", "Tripitaka"], c: 0 },
+            { t:1, q: "Lagu 'Apuse' berasal dari daerah...", a: ["Papua", "Aceh", "Maluku", "Jawa"], c: 0 },
+            { t:1, q: "Suku Baduy tinggal di wilayah...", a: ["Banten", "Lampung", "Bali", "Madura"], c: 0 },
+            { t:1, q: "Angklung adalah alat musik tradisional dari...", a: ["Jawa Barat", "Jawa Tengah", "Jawa Timur", "Bali"], c: 0 },
+            { t:1, q: "Upacara Ngaben di Bali dilakukan untuk...", a: ["Pembakaran Jenazah", "Penyambutan Tamu", "Syukuran Panen", "Pernikahan"], c: 0 },
+
+            // Kategori 2: Perubahan Sosial (20 Soal)
+            { t:2, q: "Faktor internal perubahan sosial adalah faktor yang...", a: ["Berasal dari dalam masyarakat", "Berasal dari alam", "Pengaruh negara asing", "Penjajahan"], c: 0 },
+            { t:2, q: "Contoh faktor internal perubahan sosial adalah...", a: ["Penemuan Baru (Inovasi)", "Peperangan", "Bencana Alam", "Budaya Asing"], c: 0 },
+            { t:2, q: "Faktor eksternal perubahan sosial adalah...", a: ["Pengaruh lingkungan alam", "Pertumbuhan penduduk", "Konflik internal", "Revolusi"], c: 0 },
+            { t:2, q: "Perubahan yang berlangsung sangat lambat disebut...", a: ["Evolusi", "Revolusi", "Regresi", "Progres"], c: 0 },
+            { t:2, q: "Perubahan yang berlangsung cepat dan mendasar disebut...", a: ["Revolusi", "Evolusi", "Modernisasi", "Globalisasi"], c: 0 },
+            { t:2, q: "Urbanisasi merupakan contoh perubahan sosial di bidang...", a: ["Kependudukan", "Agama", "Bahasa", "Kesenian"], c: 0 },
+            { t:2, q: "Dampak positif perubahan sosial adalah...", a: ["Modernisasi Teknologi", "Kesenjangan Sosial", "Lunturnya Nilai Luhur", "Perilaku Konsumtif"], c: 0 },
+            { t:2, q: "Perubahan sosial yang direncanakan disebut...", a: ["Intended Change", "Unintended Change", "Natural Change", "Slow Change"], c: 0 },
+            { t:2, q: "Penyebab perubahan sosial akibat bencana alam termasuk faktor...", a: ["Eksternal", "Internal", "Individu", "Politik"], c: 0 },
+            { t:2, q: "Masuknya internet ke desa-desa menyebabkan perubahan...", a: ["Cara Berkomunikasi", "Genetik Suku", "Letak Geografis", "Warna Kulit"], c: 0 },
+            { t:2, q: "Penemuan mesin uap memicu perubahan besar yang disebut...", a: ["Revolusi Industri", "Evolusi Biologi", "Globalisasi Informasi", "Reformasi"], c: 0 },
+            { t:2, q: "Ketidakmampuan seseorang menyesuaikan diri dengan perubahan disebut...", a: ["Culture Shock", "Culture Lag", "Asimilasi", "Akulturasi"], c: 0 },
+            { t:2, q: "Perpaduan dua budaya menghasilkan budaya baru tanpa menghilangkan identitas lama disebut...", a: ["Akulturasi", "Asimilasi", "Difusi", "Amalgamasi"], c: 0 },
+            { t:2, q: "Peleburan dua budaya yang menghasilkan budaya baru sama sekali disebut...", a: ["Asimilasi", "Akulturasi", "Segregasi", "Integrasi"], c: 0 },
+            { t:2, q: "Faktor penghambat perubahan sosial adalah...", a: ["Prasangka pada hal asing", "Pendidikan maju", "Kontak dengan budaya lain", "Orientasi masa depan"], c: 0 },
+            { t:2, q: "Masyarakat yang cenderung sulit berubah disebut masyarakat...", a: ["Tradisional/Statis", "Modern", "Dinamis", "Kota"], c: 0 },
+            { t:2, q: "Globalisasi merupakan proses perubahan yang bersifat...", a: ["Mendunia", "Lokal", "Individu", "Privat"], c: 0 },
+            { t:2, q: "Contoh perubahan gaya hidup akibat modernisasi adalah...", a: ["Belanja Online", "Berburu di hutan", "Tukar menukar barang", "Nomaden"], c: 0 },
+            { t:2, q: "Perubahan sosial selalu terjadi karena manusia bersifat...", a: ["Dinamis", "Statis", "Pasif", "Kaku"], c: 0 },
+            { t:2, q: "Penyebaran unsur budaya dari satu pihak ke pihak lain disebut...", a: ["Difusi", "Invasi", "Asimilasi", "Evolusi"], c: 0 },
+
+            // Kategori 3: Sikap Global (20 Soal)
+            { t:3, q: "Globalisasi berasal dari kata 'Global' yang berarti...", a: ["Mendunia/Umum", "Lokal", "Negara", "Pulau"], c: 0 },
+            { t:3, q: "Sikap yang benar menghadapi budaya asing adalah...", a: ["Menyaring (Selektif)", "Menerima semuanya", "Menolak semuanya", "Membenci tanpa tahu"], c: 0 },
+            { t:3, q: "Dampak negatif globalisasi adalah munculnya sifat...", a: ["Konsumerisme & Individualis", "Gotong Royong", "Saling Tolong", "Hemat"], c: 0 },
+            { t:3, q: "Alat penyaring utama budaya asing di Indonesia adalah...", a: ["Nilai-nilai Pancasila", "Uang", "Kekuatan Militer", "Paspor"], c: 0 },
+            { t:3, q: "Paham yang mementingkan kesenangan duniawi disebut...", a: ["Hedonisme", "Nasionalisme", "Sekulerisme", "Komunisme"], c: 0 },
+            { t:3, q: "Gaya hidup meniru budaya Barat disebut...", a: ["Westernisasi", "Modernisasi", "Industrialisasi", "Urbanisasi"], c: 0 },
+            { t:3, q: "Salah satu tantangan global terhadap identitas bangsa adalah...", a: ["Lunturnya budaya lokal", "Meningkatnya turis", "Banyaknya bahasa", "Ekspor lancar"], c: 0 },
+            { t:3, q: "Upaya melestarikan budaya di era global dapat dilakukan dengan...", a: ["Mempelajari seni tradisional", "Membakar alat musik", "Hanya menyukai lagu luar", "Melupakan sejarah"], c: 0 },
+            { t:3, q: "Perdagangan bebas antarnegara merupakan contoh globalisasi di bidang...", a: ["Ekonomi", "Budaya", "Agama", "Pendidikan"], c: 0 },
+            { t:3, q: "Sikap bangga menggunakan produk dalam negeri merupakan bentuk...", a: ["Nasionalisme", "Egoisme", "Individualisme", "Separatisme"], c: 0 },
+            { t:3, q: "Globalisasi membuat dunia seolah tanpa batas, istilah ini disebut...", a: ["Borderless World", "Digital World", "Old World", "Small World"], c: 0 },
+            { t:3, q: "Kemudahan mendapatkan informasi dari luar negeri adalah dampak globalisasi bidang...", a: ["Komunikasi", "Transportasi", "Pertahanan", "Geografi"], c: 0 },
+            { t:3, q: "Sikap menutup diri dari pengaruh luar dapat menyebabkan...", a: ["Ketertinggalan", "Kemajuan", "Keamanan", "Kekayaan"], c: 0 },
+            { t:3, q: "Budaya lokal harus dijadikan sebagai...", a: ["Filter/Penyaring budaya luar", "Beban", "Rahasia", "Sampah"], c: 0 },
+            { t:3, q: "Salah satu cara agar budaya Indonesia dikenal dunia adalah...", a: ["Promosi melalui internet", "Menyembunyikannya", "Menjualnya", "Mengecilkan nilainya"], c: 0 },
+            { t:3, q: "Dampak positif globalisasi bagi pendidikan adalah...", a: ["Akses ilmu pengetahuan luas", "Mudahnya mencontek", "Lupa waktu belajar", "Bermain game"], c: 0 },
+            { t:3, q: "Masuknya perusahaan asing ke Indonesia harus diimbangi dengan...", a: ["Peningkatan SDM lokal", "Pengusiran", "Penerimaan tanpa syarat", "Pemberian tanah gratis"], c: 0 },
+            { t:3, q: "Persaingan global menuntut masyarakat Indonesia menjadi...", a: ["Kreatif dan Kompetitif", "Malas", "Pasrah", "Pendiam"], c: 0 },
+            { t:3, q: "Salah satu identitas nasional Indonesia di mata dunia adalah...", a: ["Batik", "Sushi", "Pizza", "Kimono"], c: 0 },
+            { t:3, q: "Jati diri bangsa Indonesia bersumber pada...", a: ["Pancasila", "Budaya Asing", "Tren Sosmed", "Opinis Individu"], c: 0 }
+        ];
+
+        const p1Heroes = [
+            {id:'A1', name:'ALOK', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Alok&backgroundColor=00f0ff'},
+            {id:'A2', name:'KELLY', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Kelly&backgroundColor=00f0ff'},
+            {id:'A3', name:'CHRONO', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Chrono&backgroundColor=00f0ff'},
+            {id:'A4', name:'ANDREW', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Andrew&backgroundColor=00f0ff'},
+            {id:'A5', name:'WUKONG', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Wukong&backgroundColor=00f0ff'},
+            {id:'A6', name:'MAXIM', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Maxim&backgroundColor=00f0ff'},
+            {id:'A7', name:'KOTA', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Kota&backgroundColor=00f0ff'},
+            {id:'A8', name:'SKYLER', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Skyler&backgroundColor=00f0ff'}
+        ];
+        const p2Heroes = [
+            {id:'B1', name:'HAYATO', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Hayato&backgroundColor=ff2a00'},
+            {id:'B2', name:'MOCO', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Moco&backgroundColor=ff2a00'},
+            {id:'B3', name:'DASH', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Dash&backgroundColor=ff2a00'},
+            {id:'B4', name:'KLA', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Kla&backgroundColor=ff2a00'},
+            {id:'B5', name:'SHANI', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Shani&backgroundColor=ff2a00'},
+            {id:'B6', name:'D-BEE', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=DBee&backgroundColor=ff2a00'},
+            {id:'B7', name:'NIKITA', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Nikita&backgroundColor=ff2a00'},
+            {id:'B8', name:'HOMER', img:'https://api.dicebear.com/7.x/avataaars/svg?seed=Homer&backgroundColor=ff2a00'}
+        ];
+
+        let game = {
+            p1: { score: 0, idx: 0, time: 30, pos: 0, hero: p1Heroes[0], qList: [] },
+            p2: { score: 0, idx: 0, time: 30, pos: 0, hero: p2Heroes[0], qList: [] },
+            loop: null
+        };
+
+        function changeScreen(id) {
+            document.querySelectorAll('div[id^="screen-"]').forEach(s => s.classList.add('hidden'));
+            const el = document.getElementById(id);
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+        }
+
+        function initHeroes() {
+            const g1 = document.getElementById('p1-hero-grid');
+            const g2 = document.getElementById('p2-hero-grid');
+            p1Heroes.forEach((h, i) => {
+                const d = document.createElement('div');
+                d.className = `char-card p-1 rounded ${i===0?'selected':''}`;
+                d.onclick = () => { game.p1.hero = h; Array.from(g1.children).forEach(c => c.classList.remove('selected')); d.classList.add('selected'); };
+                d.innerHTML = `<img src="${h.img}" class="w-full rounded"><p class="text-[8px] text-center mt-1">${h.name}</p>`;
+                g1.appendChild(d);
+            });
+            p2Heroes.forEach((h, i) => {
+                const d = document.createElement('div');
+                d.className = `char-card p-1 rounded ${i===0?'selected':''}`;
+                d.onclick = () => { game.p2.hero = h; Array.from(g2.children).forEach(c => c.classList.remove('selected')); d.classList.add('selected'); };
+                d.innerHTML = `<img src="${h.img}" class="w-full rounded"><p class="text-[8px] text-center mt-1">${h.name}</p>`;
+                g2.appendChild(d);
+            });
+        }
+
+        function startGame(topic) {
+            let pool = topic === 4 ? [...questData] : questData.filter(q => q.t === topic);
+            game.p1.qList = [...pool].sort(() => Math.random() - 0.5);
+            game.p2.qList = [...pool].sort(() => Math.random() - 0.5);
+            
+            document.getElementById('p1-icon').src = game.p1.hero.img;
+            document.getElementById('p2-icon').src = game.p2.hero.img;
+            
+            changeScreen('screen-game');
+            loadQ(1); loadQ(2);
+            startLoop();
+            document.getElementById('snd-tick').play();
+        }
+
+        function loadQ(pNum) {
+            const p = game[`p${pNum}`];
+            const data = p.qList[p.idx % p.qList.length];
+            document.getElementById(`p${pNum}-question`).innerText = data.q;
+            
+            const grid = document.getElementById(`p${pNum}-options`);
+            grid.innerHTML = '';
+            
+            // Pengacakan Independen tiap pemain
+            let sequence = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+            sequence.forEach(i => {
+                const b = document.createElement('button');
+                b.className = "answer-btn";
+                b.innerText = data.a[i];
+                b.onclick = () => check(pNum, i);
+                grid.appendChild(b);
+            });
+            p.time = 30;
+        }
+
+        function check(pNum, choice) {
+            const p = game[`p${pNum}`];
+            const correct = p.qList[p.idx % p.qList.length].c;
+            
+            if(choice === correct) {
+                p.score += 20;
+                p.pos += 6;
+                playSnd('snd-hore');
+                spawnFloat(pNum, "HORE! +20", "text-green-400");
+            } else {
+                p.score = Math.max(0, p.score - 10);
+                p.pos = Math.max(0, p.pos - 4);
+                playSnd('snd-salah');
+                spawnFloat(pNum, "SALAH! -10", "text-red-500");
+            }
+
+            document.getElementById(`p${pNum}-score`).innerText = p.score;
+            document.getElementById(`p${pNum}-marker`).style.left = p.pos + "%";
+
+            if(p.pos >= 95) return end(pNum);
+
+            p.idx++;
+            loadQ(pNum);
+        }
+
+        function playSnd(id) {
+            const s = document.getElementById(id);
+            s.currentTime = 0;
+            s.play();
+        }
+
+        function spawnFloat(pNum, txt, cls) {
+            const z = document.getElementById(`zone-${pNum}`);
+            const d = document.createElement('div');
+            d.className = `floating-score ${cls}`;
+            d.style.left = "50%";
+            d.style.top = "50%";
+            d.innerText = txt;
+            z.appendChild(d);
+            setTimeout(() => d.remove(), 1000);
+        }
+
+        function startLoop() {
+            game.loop = setInterval(() => {
+                [1, 2].forEach(n => {
+                    const p = game[`p${n}`];
+                    p.time--;
+                    const txt = document.getElementById(`p${n}-timer-val`);
+                    const bar = document.getElementById(`p${n}-timer-bar`);
+                    txt.innerText = p.time + "s";
+                    bar.style.width = (p.time/30)*100 + "%";
+                    
+                    if(p.time < 10) txt.classList.add('timer-critical');
+                    else txt.classList.remove('timer-critical');
+                    
+                    if(p.time <= 0) check(n, -1);
+                });
+            }, 1000);
+        }
+
+        function end(winner) {
+            clearInterval(game.loop);
+            document.getElementById('snd-tick').pause();
+            const w = game[`p${winner}`];
+            document.getElementById('win-name').innerText = `P${winner} (${w.hero.name})`;
+            document.getElementById('win-avatar').src = w.hero.img;
+            document.getElementById('win-score').innerText = w.score;
+            changeScreen('screen-result');
+        }
+
+        window.onload = initHeroes;
+    </script>
+</body>
+</html>
+
